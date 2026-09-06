@@ -1,0 +1,24 @@
+name: Build LUNI APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - run: flutter pub get
+      - run: flutter build apk --split-per-abi --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LUNI-APK
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
