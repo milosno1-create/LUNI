@@ -10,9 +10,11 @@ class LuniApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Calcolatrice',
+      title: 'Calculator',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: Colors.black,
+      ),
       home: const CalculatorScreen(),
     );
   }
@@ -26,41 +28,62 @@ class CalculatorScreen extends StatefulWidget {
 }
 
 class _CalculatorScreenState extends State<CalculatorScreen> {
-  String _output = "0";
-  String _input = "";
+  String _display = '0';
+  String _input = '';
 
-  void _buttonPressed(String buttonText) {
+  void _onKeyPress(String value) {
     setState(() {
-      if (buttonText == "C") {
-        _input = "";
-        _output = "0";
-      } else if (buttonText == "=") {
-        if (_input == "1234") {
+      if (value == 'C') {
+        _display = '0';
+        _input = '';
+      } else if (value == '=') {
+        if (_input == '1234') {
+          _input = '';
+          _display = '0';
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const ChatScreen()),
           );
         } else {
-          _output = "Errore";
+          try {
+            _display = _evaluateExpression(_input);
+          } catch (e) {
+            _display = 'Error';
+          }
+          _input = '';
         }
       } else {
-        _input += buttonText;
-        _output = _input;
+        if (_display == '0' || _display == 'Error') {
+          _display = value;
+        } else {
+          _display += value;
+        }
+        _input += value;
       }
     });
   }
 
-  Widget _buildButton(String text, Color color) {
+  String _evaluateExpression(String expr) {
+    return expr;
+  }
+
+  Widget _buildButton(String text, {Color color = Colors.grey}) {
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.all(4.0),
+        padding: const EdgeInsets.all(6.0),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: color,
             padding: const EdgeInsets.all(22.0),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
-          onPressed: () => _buttonPressed(text),
-          child: Text(text, style: const TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold)),
+          onPressed: () => _onKeyPress(text),
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 24, color: Colors.white),
+          ),
         ),
       ),
     );
@@ -69,38 +92,114 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Calcolatrice')),
       body: Column(
-        children: <Widget>[
-          Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 12.0),
-            child: Text(_output, style: const TextStyle(fontSize: 48.0, fontWeight: FontWeight.bold)),
+        children: [
+          Expanded(
+            child: Container(
+              alignment: Alignment.bottomRight,
+              padding: const EdgeInsets.all(24.0),
+              child: Text(
+                _display,
+                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
           ),
-          const Expanded(child: Divider()),
           Column(
             children: [
-              Row(children: [_buildButton("7", Colors.grey[800]!), _buildButton("8", Colors.grey[800]!), _buildButton("9", Colors.grey[800]!), _buildButton("/", Colors.orange)]),
-              Row(children: [_buildButton("4", Colors.grey[800]!), _buildButton("5", Colors.grey[800]!), _buildButton("6", Colors.grey[800]!), _buildButton("X", Colors.orange)]),
-              Row(children: [_buildButton("1", Colors.grey[800]!), _buildButton("2", Colors.grey[800]!), _buildButton("3", Colors.grey[800]!), _buildButton("-", Colors.orange)]),
-              Row(children: [_buildButton("C", Colors.redAccent), _buildButton("0", Colors.grey[800]!), _buildButton("=", Colors.green), _buildButton("+", Colors.orange)]),
+              Row(children: [_buildButton('7'), _buildButton('8'), _buildButton('9'), _buildButton('/', color: Colors.orange)]),
+              Row(children: [_buildButton('4'), _buildButton('5'), _buildButton('6'), _buildButton('*', color: Colors.orange)]),
+              Row(children: [_buildButton('1'), _buildButton('2'), _buildButton('3'), _buildButton('-', color: Colors.orange)]),
+              Row(children: [_buildButton('C', color: Colors.redAccent), _buildButton('0'), _buildButton('=', color: Colors.green), _buildButton('+', color: Colors.orange)]),
             ],
-          )
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 }
 
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  final List<Map<String, dynamic>> _messages = [
+    {'text': 'Benvenuto nella chat segreta LUNI! 🔒', 'isMe': false},
+  ];
+  final TextEditingController _textController = TextEditingController();
+
+  void _sendMessage() {
+    if (_textController.text.trim().isEmpty) return;
+    setState(() {
+      _messages.add({
+        'text': _textController.text.trim(),
+        'isMe': true,
+      });
+    });
+    _textController.clear();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('LUNI Private Chat')),
-      body: const Center(
-        child: Text('Benvenuto in LUNI Messenger!', style: TextStyle(fontSize: 20)),
+      appBar: AppBar(
+        title: const Text('LUNI Messenger'),
+        backgroundColor: Colors.grey[900],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final msg = _messages[index];
+                return Align(
+                  alignment: msg['isMe'] ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: msg['isMe'] ? Colors.green[700] : Colors.grey[800],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      msg['text'],
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            color: Colors.grey[900],
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _textController,
+                    decoration: const InputDecoration(
+                      hintText: 'Scrivi un messaggio cifrato...',
+                      hintStyle: TextStyle(color: Colors.grey),
+                      border: InputBorder.none,
+                    ),
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send, color: Colors.green),
+                  onPressed: _sendMessage,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
